@@ -92,30 +92,26 @@ function countMasCrosses(grid: string[]): number {
     r: number,
     c: number,
   ): boolean {
-    const diagonalLetters = "MS";
+    const topLeftChar: string | undefined = (grid[r - 1] ?? [])[c - 1];
+    const topRightChar: string | undefined = (grid[r - 1] ?? [])[c + 1];
+    const bottomLeftChar: string | undefined = (grid[r + 1] ?? [])[c - 1];
+    const bottomRightChar: string | undefined = (grid[r + 1] ?? [])[c + 1];
+
+    const isLeftDiagValid = (topLeftChar === "M" && bottomRightChar == "S") ||
+      (topLeftChar === "S" && bottomRightChar == "M");
+
+    const isRightDiagValid = (topRightChar === "M" && bottomLeftChar == "S") ||
+      (topRightChar === "S" && bottomLeftChar == "M");
+
     if (
-      (r < 1 || grid.length - 2 < r) ||
-      (c < 1 || grid[r].length - 2 < c) ||
-      grid[r][c] !== "A" ||
-      !diagonalLetters.includes(grid[r - 1][c - 1]) ||
-      !diagonalLetters.includes(grid[r - 1][c + 1]) ||
-      !diagonalLetters.includes(grid[r + 1][c - 1]) ||
-      !diagonalLetters.includes(grid[r + 1][c + 1])
+      grid[r][c] == "A" &&
+      isLeftDiagValid &&
+      isRightDiagValid
     ) {
-      return false;
+      return true;
     }
 
-    const topLeft = grid[r - 1][c - 1];
-    const topRight = grid[r - 1][c + 1];
-    const bottomLeft = grid[r + 1][c - 1];
-    const bottomRight = grid[r + 1][c + 1];
-
-    if (topLeft === "M" && bottomRight !== "S") return false;
-    if (topLeft === "S" && bottomRight !== "M") return false;
-    if (topRight === "M" && bottomLeft !== "S") return false;
-    if (topRight === "S" && bottomLeft !== "M") return false;
-
-    return true;
+    return false;
   }
 
   let count = 0;
