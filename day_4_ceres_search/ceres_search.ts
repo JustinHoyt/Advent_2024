@@ -88,10 +88,10 @@ Deno.test("part 1: should find 4 on simple board", () => {
 // Part 2
 
 function isMasCross(grid: string[], r: number, c: number): boolean {
-  const topLeftChar: string | undefined = (grid[r - 1] ?? [])[c - 1];
-  const topRightChar: string | undefined = (grid[r - 1] ?? [])[c + 1];
-  const bottomLeftChar: string | undefined = (grid[r + 1] ?? [])[c - 1];
-  const bottomRightChar: string | undefined = (grid[r + 1] ?? [])[c + 1];
+  const topLeftChar: string | undefined = grid[r - 1]?.[c - 1];
+  const topRightChar: string | undefined = grid[r - 1]?.[c + 1];
+  const bottomLeftChar: string | undefined = grid[r + 1]?.[c - 1];
+  const bottomRightChar: string | undefined = grid[r + 1]?.[c + 1];
 
   const isCenterValid = grid[r][c] == "A";
 
