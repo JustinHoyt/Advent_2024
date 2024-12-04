@@ -31,16 +31,13 @@ function sumDistances(arr1: number[], arr2: number[]) {
 
 function sumSimilarityScore(arr1: number[], arr2: number[]) {
   let sum = 0;
-  const occurancesOfList2 = new Map<number, number>();
+  const counter = new Map<number, number>();
   for (const num of arr2) {
-    occurancesOfList2.set(
-      num,
-      (occurancesOfList2.get(num) ?? 0) + 1,
-    );
+    counter.set(num, (counter.get(num) ?? 0) + 1);
   }
 
   for (const num of arr1) {
-    sum += num * (occurancesOfList2.get(num) ?? 0);
+    sum += num * (counter.get(num) ?? 0);
   }
 
   return sum;
