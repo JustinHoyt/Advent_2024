@@ -94,8 +94,8 @@ function countMasCrosses(grid: string[]): number {
   ): boolean {
     const diagonalLetters = "MS";
     if (
-      (r - 1 < 0 || grid.length <= r + 1) ||
-      (c - 1 < 0 || grid[r].length <= c + 1) ||
+      (r < 1 || grid.length - 2 < r) ||
+      (c < 1 || grid[r].length - 2 < c) ||
       grid[r][c] !== "A" ||
       !diagonalLetters.includes(grid[r - 1][c - 1]) ||
       !diagonalLetters.includes(grid[r - 1][c + 1]) ||
