@@ -97,21 +97,15 @@ function countMasCrosses(grid: string[]): number {
     const bottomLeftChar: string | undefined = (grid[r + 1] ?? [])[c - 1];
     const bottomRightChar: string | undefined = (grid[r + 1] ?? [])[c + 1];
 
-    const isLeftDiagValid = (topLeftChar === "M" && bottomRightChar == "S") ||
-      (topLeftChar === "S" && bottomRightChar == "M");
+    const isCenterValid = grid[r][c] == "A";
 
-    const isRightDiagValid = (topRightChar === "M" && bottomLeftChar == "S") ||
-      (topRightChar === "S" && bottomLeftChar == "M");
+    const isLeftDiagValid = (topLeftChar === "M" && bottomRightChar === "S") ||
+      (topLeftChar === "S" && bottomRightChar === "M");
 
-    if (
-      grid[r][c] == "A" &&
-      isLeftDiagValid &&
-      isRightDiagValid
-    ) {
-      return true;
-    }
+    const isRightDiagValid = (topRightChar === "M" && bottomLeftChar === "S") ||
+      (topRightChar === "S" && bottomLeftChar === "M");
 
-    return false;
+    return isCenterValid && isLeftDiagValid && isRightDiagValid;
   }
 
   let count = 0;
