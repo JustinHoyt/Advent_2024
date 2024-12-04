@@ -9,6 +9,7 @@ if (import.meta.main) {
     .split("\n");
 
   console.log(countXmasMatches(input));
+  console.log(countMasCrosses(input));
 }
 
 // Part 1
@@ -57,7 +58,7 @@ function countXmasMatches(grid: string[]): number {
   return count;
 }
 
-Deno.test("default input", () => {
+Deno.test("part 1: should find 18 on board with many XMAS letters that don't match", () => {
   const input = [
     "MMMSXXMASM",
     "MSAMXMSMSA",
@@ -73,7 +74,7 @@ Deno.test("default input", () => {
   assertEquals(countXmasMatches(input), 18);
 });
 
-Deno.test("default input", () => {
+Deno.test("part 1: should find 4 on simple board", () => {
   const input = [
     "..X...",
     ".SAMX.",
@@ -85,3 +86,59 @@ Deno.test("default input", () => {
 });
 
 // Part 2
+
+function countMasCrosses(grid: string[]): number {
+  function isMasCross(
+    r: number,
+    c: number,
+  ): boolean {
+    const diagonalLetters = "MS";
+    if (
+      (r - 1 < 0 || grid.length <= r + 1) ||
+      (c - 1 < 0 || grid[r].length <= c + 1) ||
+      grid[r][c] !== "A" ||
+      !diagonalLetters.includes(grid[r - 1][c - 1]) ||
+      !diagonalLetters.includes(grid[r - 1][c + 1]) ||
+      !diagonalLetters.includes(grid[r + 1][c - 1]) ||
+      !diagonalLetters.includes(grid[r + 1][c + 1])
+    ) {
+      return false;
+    }
+
+    const topLeft = grid[r - 1][c - 1];
+    const topRight = grid[r - 1][c + 1];
+    const bottomLeft = grid[r + 1][c - 1];
+    const bottomRight = grid[r + 1][c + 1];
+
+    if (topLeft === "M" && bottomRight !== "S") return false;
+    if (topLeft === "S" && bottomRight !== "M") return false;
+    if (topRight === "M" && bottomLeft !== "S") return false;
+    if (topRight === "S" && bottomLeft !== "M") return false;
+
+    return true;
+  }
+
+  let count = 0;
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      count += Number(isMasCross(r, c));
+    }
+  }
+  return count;
+}
+
+Deno.test("part 2: should find 9 from every combination", () => {
+  const input = [
+    ".M.S......",
+    "..A..MSMS.",
+    ".M.S.MAA..",
+    "..A.ASMSM.",
+    ".M.S.M....",
+    "..........",
+    "S.S.S.S.S.",
+    ".A.A.A.A..",
+    "M.M.M.M.M.",
+    "..........",
+  ];
+  assertEquals(countMasCrosses(input), 9);
+});
