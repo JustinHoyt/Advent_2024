@@ -87,31 +87,28 @@ Deno.test("part 1: should find 4 on simple board", () => {
 
 // Part 2
 
+function isMasCross(grid: string[], r: number, c: number): boolean {
+  const topLeftChar: string | undefined = (grid[r - 1] ?? [])[c - 1];
+  const topRightChar: string | undefined = (grid[r - 1] ?? [])[c + 1];
+  const bottomLeftChar: string | undefined = (grid[r + 1] ?? [])[c - 1];
+  const bottomRightChar: string | undefined = (grid[r + 1] ?? [])[c + 1];
+
+  const isCenterValid = grid[r][c] == "A";
+
+  const isLeftDiagValid = (topLeftChar === "M" && bottomRightChar === "S") ||
+    (topLeftChar === "S" && bottomRightChar === "M");
+
+  const isRightDiagValid = (topRightChar === "M" && bottomLeftChar === "S") ||
+    (topRightChar === "S" && bottomLeftChar === "M");
+
+  return isCenterValid && isLeftDiagValid && isRightDiagValid;
+}
+
 function countMasCrosses(grid: string[]): number {
-  function isMasCross(
-    r: number,
-    c: number,
-  ): boolean {
-    const topLeftChar: string | undefined = (grid[r - 1] ?? [])[c - 1];
-    const topRightChar: string | undefined = (grid[r - 1] ?? [])[c + 1];
-    const bottomLeftChar: string | undefined = (grid[r + 1] ?? [])[c - 1];
-    const bottomRightChar: string | undefined = (grid[r + 1] ?? [])[c + 1];
-
-    const isCenterValid = grid[r][c] == "A";
-
-    const isLeftDiagValid = (topLeftChar === "M" && bottomRightChar === "S") ||
-      (topLeftChar === "S" && bottomRightChar === "M");
-
-    const isRightDiagValid = (topRightChar === "M" && bottomLeftChar === "S") ||
-      (topRightChar === "S" && bottomLeftChar === "M");
-
-    return isCenterValid && isLeftDiagValid && isRightDiagValid;
-  }
-
   let count = 0;
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
-      count += Number(isMasCross(r, c));
+      count += Number(isMasCross(grid, r, c));
     }
   }
   return count;
