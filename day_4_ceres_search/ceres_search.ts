@@ -18,32 +18,25 @@ function countXmasMatches(grid: string[]): number {
   function countXmasRec(
     r: number,
     c: number,
-    wordSoFar: string,
     dir: Dir,
+    wordSoFar = "",
   ): number {
-    if (
-      (r < 0 || grid.length <= r) ||
-      (c < 0 || grid[r].length <= c) ||
-      // break if it's not a prefix of 'XMAS'
-      !"XMAS".startsWith(`${wordSoFar}${grid[r][c]}`)
-    ) {
-      return 0;
-    }
-    const letter = grid[r][c];
+    const letter: string | undefined = grid[r]?.[c];
+    if (!letter) return 0;
+
     const newWord = `${wordSoFar}${letter}`;
 
-    if (newWord === "XMAS") {
-      return 1;
-    }
+    if (!"XMAS".startsWith(`${newWord}`)) return 0;
+    if (newWord === "XMAS") return 1;
 
-    if (dir === "NW") return countXmasRec(r - 1, c - 1, newWord, dir);
-    else if (dir === "N") return countXmasRec(r - 1, c, newWord, dir);
-    else if (dir === "NE") return countXmasRec(r - 1, c + 1, newWord, dir);
-    else if (dir === "W") return countXmasRec(r, c - 1, newWord, dir);
-    else if (dir === "E") return countXmasRec(r, c + 1, newWord, dir);
-    else if (dir === "SW") return countXmasRec(r + 1, c - 1, newWord, dir);
-    else if (dir === "S") return countXmasRec(r + 1, c, newWord, dir);
-    else if (dir === "SE") return countXmasRec(r + 1, c + 1, newWord, dir);
+    if (dir === "NW") return countXmasRec(r - 1, c - 1, dir, newWord);
+    else if (dir === "N") return countXmasRec(r - 1, c, dir, newWord);
+    else if (dir === "NE") return countXmasRec(r - 1, c + 1, dir, newWord);
+    else if (dir === "W") return countXmasRec(r, c - 1, dir, newWord);
+    else if (dir === "E") return countXmasRec(r, c + 1, dir, newWord);
+    else if (dir === "SW") return countXmasRec(r + 1, c - 1, dir, newWord);
+    else if (dir === "S") return countXmasRec(r + 1, c, dir, newWord);
+    else if (dir === "SE") return countXmasRec(r + 1, c + 1, dir, newWord);
     else throw new Error("invalid direction");
   }
 
@@ -51,7 +44,7 @@ function countXmasMatches(grid: string[]): number {
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       for (const dir of dirs) {
-        count += countXmasRec(r, c, "", dir as Dir);
+        count += countXmasRec(r, c, dir as Dir);
       }
     }
   }
