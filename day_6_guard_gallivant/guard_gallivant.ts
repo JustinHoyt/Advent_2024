@@ -7,6 +7,12 @@ enum Dir {
   LEFT = "<",
 }
 
+type Position = {
+  dir: Dir;
+  row: number;
+  col: number;
+};
+
 if (import.meta.main) {
   const grid: string[][] = Deno.readTextFileSync("input.txt")
     .trim()
@@ -17,15 +23,65 @@ if (import.meta.main) {
   console.log(countLoops(grid));
 }
 
+function turnRight(pos: Position): void {
+  switch (pos.dir) {
+    case Dir.UP:
+      pos.dir = Dir.RIGHT;
+      break;
+    case Dir.RIGHT:
+      pos.dir = Dir.DOWN;
+      break;
+    case Dir.DOWN:
+      pos.dir = Dir.LEFT;
+      break;
+    case Dir.LEFT:
+      pos.dir = Dir.UP;
+      break;
+  }
+}
+
+function moveForward(pos: Position): void {
+  switch (pos.dir) {
+    case Dir.UP:
+      pos.row--;
+      break;
+    case Dir.RIGHT:
+      pos.col++;
+      break;
+    case Dir.DOWN:
+      pos.row++;
+      break;
+    case Dir.LEFT:
+      pos.col--;
+      break;
+  }
+}
+
+function getNextCell(
+  grid: string[][],
+  { row, col, dir }: Position,
+): string | undefined {
+  switch (dir) {
+    case Dir.UP:
+      return grid[row - 1]?.[col];
+    case Dir.RIGHT:
+      return grid[row]?.[col + 1];
+    case Dir.DOWN:
+      return grid[row + 1]?.[col];
+    case Dir.LEFT:
+      return grid[row]?.[col - 1];
+  }
+}
+
 // Part 1
 
-function findGuardStartingPoint(grid: string[][]): [number, number, Dir] {
+function findGuardStartingPoint(grid: string[][]): Position {
   for (const [r, row] of grid.entries()) {
     for (const [c, cell] of row.entries()) {
-      if (cell === Dir.UP) return [r, c, Dir.UP];
-      if (cell === Dir.RIGHT) return [r, c, Dir.RIGHT];
-      if (cell === Dir.DOWN) return [r, c, Dir.DOWN];
-      if (cell === Dir.LEFT) return [r, c, Dir.LEFT];
+      if (cell === Dir.UP) return { row: r, col: c, dir: Dir.UP };
+      if (cell === Dir.RIGHT) return { row: r, col: c, dir: Dir.RIGHT };
+      if (cell === Dir.DOWN) return { row: r, col: c, dir: Dir.DOWN };
+      if (cell === Dir.LEFT) return { row: r, col: c, dir: Dir.LEFT };
     }
   }
   throw new Error("no guard found");
@@ -34,10 +90,10 @@ function findGuardStartingPoint(grid: string[][]): [number, number, Dir] {
 function countCellsVisited(grid: string[][]): number {
   const cellsVisited = new Set<string>();
 
-  function recurse(r: number, c: number, currDir: Dir): void {
+  function recurse(r: number, c: number, dir: Dir): void {
     cellsVisited.add(`${r},${c}`);
 
-    switch (currDir) {
+    switch (dir) {
       case Dir.UP: {
         const cellUp: string | undefined = grid[r - 1]?.[c];
 
@@ -73,9 +129,9 @@ function countCellsVisited(grid: string[][]): number {
     }
   }
 
-  const [r, c, currDir] = findGuardStartingPoint(grid);
+  const { row, col, dir } = findGuardStartingPoint(grid);
 
-  recurse(r, c, currDir);
+  recurse(row, col, dir);
   return cellsVisited.size;
 }
 
@@ -97,100 +153,41 @@ Deno.test("Part 1: Given example", () => {
 
 // Part 2
 
-function countLoops(grid: string[][]): number {
+function isLoop(grid: string[][], guardPos: Position): boolean {
+  const pos = { ...guardPos };
   const obsructionsVisited = new Set<string>();
 
-  function isLoop(r: number, c: number, currDir: Dir): boolean {
-    const blockedTwice = (cell: string, coord: string) =>
-      cell === "#" && obsructionsVisited.has(coord);
-    const blocked = (cell: string) => cell === "#";
-    const exitedGrid = (cell: string) => cell === undefined;
-    const moveUp = () => r--;
-    const moveRight = () => c++;
-    const moveDown = () => r++;
-    const moveLeft = () => c--;
+  while (true) {
+    const coordString = JSON.stringify(pos);
+    const nextCell: string | undefined = getNextCell(grid, pos);
 
-    while (true) {
-      const coord = `${r},${c}: ${currDir}`;
+    // Guard exited the grid
+    if (nextCell === undefined) return false;
+    // Guard is in a loop
+    if (nextCell === "#" && obsructionsVisited.has(coordString)) return true;
 
-      switch (currDir) {
-        case Dir.UP: {
-          const nextCell: string | undefined = grid[r - 1]?.[c];
-
-          if (exitedGrid(nextCell)) return false;
-          if (blocked(nextCell) && obsructionsVisited.has(coord)) return true;
-
-          if (blocked(nextCell)) {
-            obsructionsVisited.add(coord);
-            currDir = Dir.RIGHT;
-          } else { // no blockages
-            moveUp();
-          }
-
-          break;
-        }
-        case Dir.RIGHT: {
-          const nextCell: string | undefined = grid[r]?.[c + 1];
-
-          if (exitedGrid(nextCell)) return false;
-          if (blocked(nextCell) && obsructionsVisited.has(coord)) return true;
-
-          if (blocked(nextCell)) {
-            obsructionsVisited.add(coord);
-            currDir = Dir.DOWN;
-          } else { // no blockages
-            moveRight();
-          }
-
-          break;
-        }
-        case Dir.DOWN: {
-          const nextCell: string | undefined = grid[r + 1]?.[c];
-
-          if (exitedGrid(nextCell)) return false;
-          if (blocked(nextCell) && obsructionsVisited.has(coord)) return true;
-
-          if (blocked(nextCell)) {
-            obsructionsVisited.add(coord);
-            currDir = Dir.LEFT;
-          } else { // no blockages
-            moveDown();
-          }
-
-          break;
-        }
-        case Dir.LEFT: {
-          const nextCell: string | undefined = grid[r]?.[c - 1];
-
-          if (exitedGrid(nextCell)) return false;
-          if (blocked(nextCell) && obsructionsVisited.has(coord)) return true;
-
-          if (blocked(nextCell)) {
-            obsructionsVisited.add(coord);
-            currDir = Dir.UP;
-          } else { // no blockages
-            moveLeft();
-          }
-
-          break;
-        }
-      }
+    if (nextCell === "#") {
+      obsructionsVisited.add(coordString);
+      turnRight(pos);
+    } else { // no blockages
+      moveForward(pos);
     }
   }
+}
 
-  const [startingRow, startingCol, currDir] = findGuardStartingPoint(grid);
+function countLoops(grid: string[][]): number {
+  const guardPos = findGuardStartingPoint(grid);
   let numLoops = 0;
 
   for (let i = 0; i < grid.length; i++) {
     for (let j = 0; j < grid[i].length; j++) {
       // can't obstruct the guard's starting point
-      if (i === startingRow && j === startingCol) continue;
+      if (i === guardPos.row && j === guardPos.row) continue;
       // can't block if it's already obstructed
       if (grid[i][j] === "#") continue;
 
       grid[i][j] = "#";
-      numLoops += Number(isLoop(startingRow, startingCol, currDir));
-      obsructionsVisited.clear();
+      numLoops += Number(isLoop(grid, guardPos));
       grid[i][j] = ".";
     }
   }
@@ -233,11 +230,12 @@ Deno.test("Part 2: zero loops", () => {
 
 Deno.test("Part 2: loop that goes only up and down", () => {
   const input = [
-    ["#", "#", "."],
-    [".", ".", "O"],
-    ["^", ".", "."],
-    ["#", ".", "."],
-    [".", "#", "#"],
+    //0    1    2
+    ["#", "#", "."], // 0
+    [".", ".", "O"], // 1
+    ["^", ".", "."], // 2
+    ["#", ".", "."], // 3
+    [".", "#", "#"], // 4
   ];
   assertEquals(countLoops(input), 1);
 });
