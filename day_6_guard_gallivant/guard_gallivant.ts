@@ -158,16 +158,16 @@ function isLoop(grid: string[][], guardPos: Position): boolean {
   const obsructionsVisited = new Set<string>();
 
   while (true) {
-    const coordString = JSON.stringify(pos);
+    const serializedPos = `${pos.row},${pos.col},${pos.dir}`;
     const nextCell: string | undefined = getNextCell(grid, pos);
 
     // Guard exited the grid
     if (nextCell === undefined) return false;
     // Guard is in a loop
-    if (nextCell === "#" && obsructionsVisited.has(coordString)) return true;
+    if (nextCell === "#" && obsructionsVisited.has(serializedPos)) return true;
 
     if (nextCell === "#") {
-      obsructionsVisited.add(coordString);
+      obsructionsVisited.add(serializedPos);
       turnRight(pos);
     } else { // no blockages
       moveForward(pos);
