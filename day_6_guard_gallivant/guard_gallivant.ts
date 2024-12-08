@@ -1,4 +1,7 @@
+import { Pool, spawn, Worker } from "npm:threads";
 import { assertEquals } from "@std/assert/equals";
+import { cpus } from "node:os";
+import { CountLoopsByRowWorker } from "./worker.ts";
 
 enum Dir {
   UP = "^",
@@ -20,57 +23,7 @@ if (import.meta.main) {
     .map((line) => Array.from(line));
 
   console.log(countCellsVisited(grid));
-  console.log(countLoops(grid));
-}
-
-function turnRight(pos: Position): void {
-  switch (pos.dir) {
-    case Dir.UP:
-      pos.dir = Dir.RIGHT;
-      break;
-    case Dir.RIGHT:
-      pos.dir = Dir.DOWN;
-      break;
-    case Dir.DOWN:
-      pos.dir = Dir.LEFT;
-      break;
-    case Dir.LEFT:
-      pos.dir = Dir.UP;
-      break;
-  }
-}
-
-function moveForward(pos: Position): void {
-  switch (pos.dir) {
-    case Dir.UP:
-      pos.row--;
-      break;
-    case Dir.RIGHT:
-      pos.col++;
-      break;
-    case Dir.DOWN:
-      pos.row++;
-      break;
-    case Dir.LEFT:
-      pos.col--;
-      break;
-  }
-}
-
-function getNextCell(
-  grid: string[][],
-  { row, col, dir }: Position,
-): string | undefined {
-  switch (dir) {
-    case Dir.UP:
-      return grid[row - 1]?.[col];
-    case Dir.RIGHT:
-      return grid[row]?.[col + 1];
-    case Dir.DOWN:
-      return grid[row + 1]?.[col];
-    case Dir.LEFT:
-      return grid[row]?.[col - 1];
-  }
+  console.log(await countLoops(grid));
 }
 
 // Part 1
@@ -153,50 +106,29 @@ Deno.test("Part 1: Given example", () => {
 
 // Part 2
 
-function isLoop(grid: string[][], guardPos: Position): boolean {
-  const pos = { ...guardPos };
-  const obsructionsVisited = new Set<string>();
-
-  while (true) {
-    const serializedPos = `${pos.row},${pos.col},${pos.dir}`;
-    const nextCell: string | undefined = getNextCell(grid, pos);
-
-    // Guard exited the grid
-    if (nextCell === undefined) return false;
-    // Guard is in a loop
-    if (nextCell === "#" && obsructionsVisited.has(serializedPos)) return true;
-
-    if (nextCell === "#") {
-      obsructionsVisited.add(serializedPos);
-      turnRight(pos);
-    } else { // no blockages
-      moveForward(pos);
-    }
-  }
-}
-
-function countLoops(grid: string[][]): number {
+async function countLoops(grid: string[][]): Promise<number> {
   const guardPos = findGuardStartingPoint(grid);
-  let numLoops = 0;
+  const pool = Pool(
+    () => spawn<CountLoopsByRowWorker>(new Worker("./worker.ts")),
+    cpus().length,
+  );
 
+  let count = 0;
   for (let i = 0; i < grid.length; i++) {
-    for (let j = 0; j < grid[i].length; j++) {
-      // can't obstruct the guard's starting point
-      if (i === guardPos.row && j === guardPos.row) continue;
-      // can't block if it's already obstructed
-      if (grid[i][j] === "#") continue;
-
-      grid[i][j] = "#";
-      numLoops += Number(isLoop(grid, guardPos));
-      grid[i][j] = ".";
-    }
+    pool.queue(
+      (worker) => worker.countLoopsByRow(grid, guardPos, i),
+    ).then((isLoop) => count += Number(isLoop));
   }
-  return numLoops;
+
+  await pool.completed();
+  await pool.terminate(true);
+
+  return count;
 }
 
 // The O's in the test are purely for illustrative purposes.
 // They denote where the added obstructions should be placed
-Deno.test("Part 2: Given example", () => {
+Deno.test("Part 2: Given example", async () => {
   const input = [
     [".", ".", ".", ".", "#", ".", ".", ".", ".", "."],
     [".", ".", ".", ".", ".", ".", ".", ".", ".", "#"],
@@ -209,10 +141,10 @@ Deno.test("Part 2: Given example", () => {
     ["#", "O", ".", "O", ".", ".", ".", ".", ".", "."],
     [".", ".", ".", ".", ".", ".", "#", "O", ".", "."],
   ];
-  assertEquals(countLoops(input), 6);
+  assertEquals(await countLoops(input), 6);
 });
 
-Deno.test("Part 2: zero loops", () => {
+Deno.test("Part 2: zero loops", async () => {
   const input = [
     [".", ".", ".", ".", "#"],
     [".", ".", ".", ".", "."],
@@ -225,10 +157,10 @@ Deno.test("Part 2: zero loops", () => {
     ["#", ".", ".", ".", "."],
     [".", ".", ".", ".", "."],
   ];
-  assertEquals(countLoops(input), 0);
+  assertEquals(await countLoops(input), 0);
 });
 
-Deno.test("Part 2: loop that goes only up and down", () => {
+Deno.test("Part 2: loop that goes only up and down", async () => {
   const input = [
     //0    1    2
     ["#", "#", "."], // 0
@@ -237,5 +169,5 @@ Deno.test("Part 2: loop that goes only up and down", () => {
     ["#", ".", "."], // 3
     [".", "#", "#"], // 4
   ];
-  assertEquals(countLoops(input), 1);
+  assertEquals(await countLoops(input), 1);
 });
