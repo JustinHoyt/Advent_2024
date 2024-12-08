@@ -1,7 +1,7 @@
 import { Pool, spawn, Worker } from "npm:threads";
 import { assertEquals } from "@std/assert/equals";
-import { cpus } from "node:os";
 import { CountLoopsByRowWorker } from "./worker.ts";
+import { sum } from "../helpers.ts";
 
 enum Dir {
   UP = "^",
@@ -29,12 +29,12 @@ if (import.meta.main) {
 // Part 1
 
 function findGuardStartingPoint(grid: string[][]): Position {
-  for (const [r, row] of grid.entries()) {
-    for (const [c, cell] of row.entries()) {
-      if (cell === Dir.UP) return { row: r, col: c, dir: Dir.UP };
-      if (cell === Dir.RIGHT) return { row: r, col: c, dir: Dir.RIGHT };
-      if (cell === Dir.DOWN) return { row: r, col: c, dir: Dir.DOWN };
-      if (cell === Dir.LEFT) return { row: r, col: c, dir: Dir.LEFT };
+  for (const [row, rowArr] of grid.entries()) {
+    for (const [col, cell] of rowArr.entries()) {
+      if (cell === Dir.UP) return { row, col, dir: Dir.UP };
+      if (cell === Dir.RIGHT) return { row, col, dir: Dir.RIGHT };
+      if (cell === Dir.DOWN) return { row, col, dir: Dir.DOWN };
+      if (cell === Dir.LEFT) return { row, col, dir: Dir.LEFT };
     }
   }
   throw new Error("no guard found");
@@ -110,20 +110,19 @@ async function countLoops(grid: string[][]): Promise<number> {
   const guardPos = findGuardStartingPoint(grid);
   const pool = Pool(
     () => spawn<CountLoopsByRowWorker>(new Worker("./worker.ts")),
-    cpus().length,
   );
 
-  let count = 0;
-  for (let i = 0; i < grid.length; i++) {
-    pool.queue(
-      (worker) => worker.countLoopsByRow(grid, guardPos, i),
-    ).then((isLoop) => count += Number(isLoop));
+  const countLoopsTasks: PromiseLike<number>[] = [];
+  for (let row = 0; row < grid.length; row++) {
+    countLoopsTasks.push(pool.queue(
+      (worker) => worker.countLoopsByRow(grid, guardPos, row),
+    ));
   }
 
   await pool.completed();
   await pool.terminate(true);
 
-  return count;
+  return await Promise.all(countLoopsTasks).then(sum);
 }
 
 // The O's in the test are purely for illustrative purposes.

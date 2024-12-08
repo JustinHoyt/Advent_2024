@@ -87,27 +87,28 @@ function isLoop(grid: string[][], guardPos: Position): boolean {
   }
 }
 
-function countLoopsByRow(
-  grid: string[][],
-  guardPos: Position,
-  row: number,
-): number {
-  const newGrid = grid.map((line) => line.map((cell) => cell));
-  let count = 0;
-  for (let j = 0; j < grid[row].length; j++) {
-    // can't obstruct the guard's starting point
-    if (row === guardPos.row && j === guardPos.row) continue;
-    // can't block if it's already obstructed
-    if (grid[row][j] === "#") continue;
+const countLoopsByRowWorker = {
+  countLoopsByRow(
+    grid: string[][],
+    guardPos: Position,
+    row: number,
+  ): number {
+    const newGrid = grid.map((line) => line.map((cell) => cell));
+    let count = 0;
+    for (let col = 0; col < grid[row].length; col++) {
+      // can't obstruct the guard's starting point
+      if (row === guardPos.row && col === guardPos.row) continue;
+      // can't block if it's already obstructed
+      if (grid[row][col] === "#") continue;
 
-    newGrid[row][j] = "#";
-    count += Number(isLoop(newGrid, guardPos));
-    newGrid[row][j] = ".";
-  }
-  return count;
-}
+      newGrid[row][col] = "#";
+      count += Number(isLoop(newGrid, guardPos));
+      newGrid[row][col] = ".";
+    }
+    return count;
+  },
+};
 
-const countLoopsByRowWorker = { countLoopsByRow };
 export type CountLoopsByRowWorker = typeof countLoopsByRowWorker;
 
 expose(countLoopsByRowWorker);
