@@ -110,4 +110,4 @@ function countLoopsByRow(
 const countLoopsByRowWorker = { countLoopsByRow };
 export type CountLoopsByRowWorker = typeof countLoopsByRowWorker;
 
-expose(countLoopsByRow);
+expose(countLoopsByRowWorker);
