@@ -3,7 +3,7 @@ import { assertEquals } from "@std/assert/equals";
 if (import.meta.main) {
   const grid: string = Deno.readTextFileSync("input.txt").trim();
 
-  // console.log(compactFiles(grid));
+  console.log(compactFiles(grid));
   console.log(compactFilesContiguously(grid));
 }
 
@@ -92,7 +92,7 @@ Deno.test("Part 1: Given example", () => {
 
 // Part 2
 
-const print = (filesAndFreeSpace: string[], count = 10) => {
+function print(filesAndFreeSpace: string[], count = 10) {
   if (count++ < 10) {
     console.log(
       filesAndFreeSpace.map((_, i) => Math.floor(i / 10))
@@ -109,12 +109,12 @@ const print = (filesAndFreeSpace: string[], count = 10) => {
     );
     console.log();
   }
-};
+}
 
-const firstEmptyRange = (
+function firstEmptyRange(
   filesAndFreeSpace: string[],
   length: number,
-): [number, number] | null => {
+): [number, number] | null {
   for (let l = 0; l < filesAndFreeSpace.length; l++) {
     const leftChar = filesAndFreeSpace[l];
     if (leftChar === ".") {
@@ -127,12 +127,12 @@ const firstEmptyRange = (
   }
 
   return null;
-};
+}
 
-const lastFilledRange = (
+function lastFilledRange(
   filesAndFreeSpace: string[],
   endIdx: number,
-): [number, number] | null => {
+): [number, number] | null {
   for (let r = endIdx; r > -1; r--) {
     const rightChar = filesAndFreeSpace[r];
     if (rightChar !== ".") {
@@ -144,13 +144,13 @@ const lastFilledRange = (
     }
   }
   return null;
-};
+}
 
-const swapRanges = (
+function swapRanges(
   filesAndFreeSpace: string[],
   [emptyLeft, _emptyRight]: [number, number],
   [filledLeft, filledRight]: [number, number],
-): void => {
+): void {
   for (let i = 0; i < filledRight - filledLeft + 1; i++) {
     [
       filesAndFreeSpace[emptyLeft + i],
@@ -160,7 +160,7 @@ const swapRanges = (
       filesAndFreeSpace[emptyLeft + i],
     ];
   }
-};
+}
 function compactDiskContiguously(filesAndFreeSpace: string[]): string[] {
   let rightIdx = filesAndFreeSpace.length;
   while (true) {
