@@ -11,36 +11,22 @@ if (import.meta.main) {
 
 // Part 1
 
-type State = {
+type Context = {
   stones: string[];
 };
 
-function print(state: State) {
-  console.log(state.stones.join(","));
-}
-
 function countStonesAfter25Blinks(stones: string[]): number {
-  const numBlinks = 25;
-
-  for (let i = 0; i < numBlinks; i++) {
-    const origLength = stones.length;
-    // if (i < 10) print({ stones });
-    for (let i = 0; i < origLength; i++) {
-      const stone = stones[i];
-      if (stone.length % 2 === 0) {
-        const midIdx = stone.length / 2;
-        // remove leading 0's. put a single 0 back if it leaves the string empty
-        stones.push(stone.slice(midIdx).replace(/^0*/, "") || "0");
-        stones[i] = stone.slice(0, midIdx).replace(/^0*/, "") || "0";
-      } else if (stone === "0") {
-        stones[i] = "1";
-      } else {
-        stones[i] = String(+stone * 2024);
-      }
-    }
+  let sum = 0;
+  const origLength = stones.length;
+  for (let i = 0; i < origLength; i++) {
+    sum += countStonesRec({
+      stone: stones[i],
+      blinksRemaining: 25,
+      memo: new Map(),
+      idx: i,
+    });
   }
-
-  return stones.length;
+  return sum;
 }
 
 Deno.test("Part 1: Given example", () => {
@@ -49,26 +35,58 @@ Deno.test("Part 1: Given example", () => {
   assertEquals(countStonesAfter25Blinks(input), 55312);
 });
 
-function countStonesAfter75Blinks(stones: string[]): number {
-  const numBlinks = 25;
+type P2Context = {
+  stone: string;
+  idx: number;
+  blinksRemaining: number;
+  memo: Map<string, number>;
+};
 
-  for (let i = 0; i < numBlinks; i++) {
-    const origLength = stones.length;
-    // if (i < 10) print({ stones });
-    for (let i = 0; i < origLength; i++) {
-      const stone = stones[i];
-      if (stone.length % 2 === 0) {
-        const midIdx = stone.length / 2;
-        // remove leading 0's. put a single 0 back if it leaves the string empty
-        stones.push(stone.slice(midIdx).replace(/^0*/, "") || "0");
-        stones[i] = stone.slice(0, midIdx).replace(/^0*/, "") || "0";
-      } else if (stone === "0") {
-        stones[i] = "1";
-      } else {
-        stones[i] = String(+stone * 2024);
-      }
-    }
+function countStonesRec(ctx: P2Context): number {
+  const { stone, blinksRemaining, memo } = ctx;
+  const key = `${stone},${blinksRemaining}`;
+
+  if (blinksRemaining === 0) return 1;
+  else ctx.blinksRemaining--;
+
+  if (memo.has(key)) return memo.get(key)!;
+  if (stone.length % 2 === 0) {
+    const leftHalf = stone.slice(0, stone.length / 2);
+    const rightHalf = stone.slice(stone.length / 2)
+      .replace(/^0+(?=.)/, "");
+    memo.set(
+      key,
+      countStonesRec({ ...ctx, stone: leftHalf }) +
+        countStonesRec({ ...ctx, stone: rightHalf }),
+    );
+  } else if (stone === "0") {
+    memo.set(key, countStonesRec({ ...ctx, stone: "1" }));
+  } else {
+    memo.set(
+      key,
+      countStonesRec({ ...ctx, stone: String(+stone * 2024) }),
+    );
   }
 
-  return stones.length;
+  return memo.get(key)!;
 }
+
+function countStonesAfter75Blinks(stones: string[]): number {
+  let sum = 0;
+  const origLength = stones.length;
+  for (let i = 0; i < origLength; i++) {
+    sum += countStonesRec({
+      stone: stones[i],
+      blinksRemaining: 1000,
+      memo: new Map(),
+      idx: i,
+    });
+  }
+  return sum;
+}
+
+Deno.test("Part 2: Given example", () => {
+  const input = ["125", "17"];
+
+  assertEquals(countStonesAfter75Blinks(input), 5.4741524973376205e+181);
+});
