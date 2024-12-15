@@ -5,7 +5,6 @@ if (import.meta.main) {
     .trim()
     .split(" ");
 
-  console.log(countStonesAfter25Blinks(stones));
   console.log(countStonesAfter75Blinks(stones));
 }
 
@@ -71,6 +70,29 @@ function countStonesRec(ctx: P2Context): number {
   return memo.get(key)!;
 }
 
+function countStonesRecObj(ctx: any): number {
+  const { stone, blinksRemaining, memo } = ctx;
+  const key = `${stone},${blinksRemaining}`;
+
+  if (blinksRemaining === 0) return 1;
+  else ctx.blinksRemaining--;
+
+  if (memo[key] !== undefined) return memo[key];
+  if (stone.length % 2 === 0) {
+    const leftHalf = stone.slice(0, stone.length / 2);
+    const rightHalf = stone.slice(stone.length / 2)
+      .replace(/^0+(?=.)/, "");
+    memo[key] = countStonesRecObj({ ...ctx, stone: leftHalf }) +
+      countStonesRecObj({ ...ctx, stone: rightHalf });
+  } else if (stone === "0") {
+    memo[key] = countStonesRecObj({ ...ctx, stone: "1" });
+  } else {
+    memo[key] = countStonesRecObj({ ...ctx, stone: String(+stone * 2024) });
+  }
+
+  return memo[key];
+}
+
 function countStonesAfter75Blinks(stones: string[]): number {
   let sum = 0;
   const origLength = stones.length;
@@ -79,6 +101,19 @@ function countStonesAfter75Blinks(stones: string[]): number {
       stone: stones[i],
       blinksRemaining: 1000,
       memo: new Map(),
+      idx: i,
+    });
+  }
+  return sum;
+}
+function countStonesAfter75BlinksObj(stones: string[]): number {
+  let sum = 0;
+  const origLength = stones.length;
+  for (let i = 0; i < origLength; i++) {
+    sum += countStonesRecObj({
+      stone: stones[i],
+      blinksRemaining: 1000,
+      memo: {},
       idx: i,
     });
   }
