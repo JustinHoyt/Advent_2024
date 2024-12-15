@@ -1,13 +1,5 @@
 import { assertEquals } from "@std/assert/equals";
-
-if (import.meta.main) {
-  const grid: string[][] = Deno.readTextFileSync("input.txt")
-    .trim()
-    .split("\n")
-    .map((line) => line.split(""));
-
-  console.log(calcPricing(grid));
-}
+import { add } from "../helpers.ts";
 
 // Part 1
 
@@ -98,20 +90,20 @@ Deno.test("Part 1: Advanced given example", () => {
 
 // Part 2
 
-class Grid<T> extends Array<Array<T>> {
+class Grid extends Array<Array<boolean>> {
   private r = 0;
   private c = 0;
-  constructor(grid: T[][]) {
+  constructor(grid: boolean[][]) {
     super();
     for (const row of grid.values()) this.push(row);
   }
 
-  set coords([r, c]: [number, number]) {
+  set currCoords([r, c]: [number, number]) {
     this.r = r;
     this.c = c;
   }
 
-  get coords(): [number, number] {
+  get currCoords(): [number, number] {
     return [this.r, this.c];
   }
 
@@ -146,36 +138,36 @@ class Grid<T> extends Array<Array<T>> {
   }
 
   get isTopLeftAnOuterCorner(): boolean {
-    return !!this.curr && !this.topLeft && !this.top && !this.left;
+    return this.curr && !this.top && !this.left;
   }
   get isTopRightAnOuterCorner(): boolean {
-    return !!this.curr && !this.topRight && !this.top && !this.right;
+    return this.curr && !this.top && !this.right;
   }
   get isBottomLeftAnOuterCorner(): boolean {
-    return !!this.curr && !this.bottomLeft && !this.bottom && !this.left;
+    return this.curr && !this.bottom && !this.left;
   }
   get isBottomRightAnOuterCorner(): boolean {
-    return !!this.curr && !this.bottomRight && !this.bottom && !this.right;
+    return this.curr && !this.bottom && !this.right;
   }
 
   get isTopLeftAnInnerCorner(): boolean {
-    return !!this.curr && !this.topLeft && !!this.top && !!this.left;
+    return this.curr && !this.topLeft && this.top && this.left;
   }
   get isTopRightAnInnerCorner(): boolean {
-    return !!this.curr && !this.topRight && !!this.top && !!this.right;
+    return this.curr && !this.topRight && this.top && this.right;
   }
   get isBottomLeftAnInnerCorner(): boolean {
-    return !!this.curr && !this.bottomLeft && !!this.bottom && !!this.left;
+    return this.curr && !this.bottomLeft && this.bottom && this.left;
   }
   get isBottomRightAnInnerCorner(): boolean {
-    return !!this.curr && !this.bottomRight && !!this.bottom && !!this.right;
+    return this.curr && !this.bottomRight && this.bottom && this.right;
   }
 }
 
 type P2Context = {
   grid: string[][];
   areaVisited: Set<string>;
-  plots: Grid<number>;
+  regionGrid: Grid;
   r: number;
   c: number;
   plant: string;
@@ -184,91 +176,64 @@ type P2Context = {
 function calcArea(
   ctx: P2Context,
 ): number {
-  const { grid, areaVisited, plots, r, c, plant } = ctx;
+  const { grid, areaVisited, regionGrid, r, c, plant } = ctx;
   const cell: string | undefined = grid[r]?.[c];
   const key = `${r},${c}`;
 
-  const isPerim = cell === undefined || cell !== plant;
-  if (isPerim) {
-    return 0;
-  }
-
+  if (cell === undefined || cell !== plant) return 0;
   if (areaVisited.has(key)) return 0;
 
   areaVisited.add(key);
+  regionGrid[r][c] = true;
 
-  plots[r][c] = 1;
   return [
     1,
     calcArea({ ...ctx, r: r + 1 }),
     calcArea({ ...ctx, r: r - 1 }),
     calcArea({ ...ctx, c: c + 1 }),
     calcArea({ ...ctx, c: c - 1 }),
-  ].reduce(
-    (acc, res) => acc + res,
-  );
+  ].reduce(add);
 }
 
 function numFenceSides(ctx: P2Context): number {
-  const { plots } = ctx;
+  const { regionGrid } = ctx;
 
   let numSides = 0;
 
-  // cound islands where they have no vertical or horizontal neighbor
-  for (let r = 0; r < plots.length; r++) {
-    for (let c = 0; c < plots[r]?.length; c++) {
-      plots.coords = [r, c];
-      if (plots.isTopLeftAnOuterCorner) {
-        numSides++;
-      }
-      if (plots.isTopRightAnOuterCorner) {
-        numSides++;
-      }
-      if (plots.isBottomLeftAnOuterCorner) {
-        numSides++;
-      }
-      if (plots.isBottomRightAnOuterCorner) {
-        numSides++;
-      }
-      if (plots.isTopLeftAnInnerCorner) {
-        numSides++;
-      }
-      if (plots.isTopRightAnInnerCorner) {
-        numSides++;
-      }
-      if (plots.isBottomLeftAnInnerCorner) {
-        numSides++;
-      }
-      if (plots.isBottomRightAnInnerCorner) {
-        numSides++;
-      }
+  for (let r = 0; r < regionGrid.length; r++) {
+    for (let c = 0; c < regionGrid[r]?.length; c++) {
+      regionGrid.currCoords = [r, c];
+      if (regionGrid.isTopLeftAnOuterCorner) numSides++;
+      if (regionGrid.isTopRightAnOuterCorner) numSides++;
+      if (regionGrid.isBottomLeftAnOuterCorner) numSides++;
+      if (regionGrid.isBottomRightAnOuterCorner) numSides++;
+      if (regionGrid.isTopLeftAnInnerCorner) numSides++;
+      if (regionGrid.isTopRightAnInnerCorner) numSides++;
+      if (regionGrid.isBottomLeftAnInnerCorner) numSides++;
+      if (regionGrid.isBottomRightAnInnerCorner) numSides++;
     }
   }
 
-  // console.log("DEBUGPRINT[4]: garden_groups.ts:254: ctx.plant=", ctx.plant);
-  // console.log("DEBUGPRINT[18]: garden_groups.ts:185: numSides=", numSides);
   return numSides;
 }
-// 1_518_548 too high
+
 function calcPricing2(grid: string[][]): number {
   let priceSum = 0;
   const areaVisited = new Set<string>();
 
   for (const r of grid.keys()) {
     for (const c of grid.keys()) {
-      // Plots of a certain connected group of plant given as 1's. plots not in
-      // that specific connected group are given as 0's.
-      //
-      // Add 2 rows and cols for accomidating the out of bounds perimeter
-      const plots = new Grid(
+      if (areaVisited.has(`${r},${c}`)) continue;
+      // A grid that maps out a single connected component of plants
+      const regionGrid = new Grid(
         Array.from({ length: grid.length }).map(() =>
-          Array.from({ length: grid[0]?.length }).map(() => 0)
+          Array.from({ length: grid[0]?.length }).map(() => false)
         ),
       );
       const ctx = {
         grid,
         areaVisited,
-        plots,
+        regionGrid,
         r,
         c,
         plant: grid[r][c],
@@ -291,6 +256,44 @@ Deno.test("Part 2: Simple given example", () => {
   assertEquals(calcPricing2(input), 80);
 });
 
+Deno.test("Part 2: Winding plot", () => {
+  const input = [
+    ["C", "C", "A", "A"],
+    ["C", "B", "C", "D"],
+    ["C", "B", "C", "C"],
+    ["C", "C", "C", "C"],
+  ];
+
+  assertEquals(calcPricing2(input), (2 * 4) + (2 * 4) + (11 * 12) + (1 * 4));
+});
+
+Deno.test("Part 2: donut plot", () => {
+  const input = [
+    ["C", "C", "C", "A"],
+    ["C", "B", "C", "D"],
+    ["C", "B", "C", "C"],
+    ["C", "C", "C", "C"],
+  ];
+
+  assertEquals(calcPricing2(input), (1 * 4) + (2 * 4) + (12 * 10) + (1 * 4));
+});
+
+// 24 sides to the big C plot
+//
+// [
+//   [".", ".", ".", ".", ".", ".", ".",+---------+".", ".", "."],
+//   [".", ".", ".", ".", ".", ".", ".",|"C", "C",+----+".", "."],
+//   [".", ".", ".", ".", ".", ".",+----+"C", "C", "C",|".", "."],
+//   [".", ".", ".", ".",+---------+"C", "C",+---------+".", "."],
+//   [".", ".", ".", ".",|"C", "C", "C",+----+".", ".", ".", "."],
+//   [".", ".", ".", ".",+----+"C",:====:".", ".", ".", ".", "."],
+//   [".", ".", ".", ".", ".",|"C", "C",|".", ".", ".", ".", "."],
+//   [".", ".", ".", ".", ".",+----+"C",|".", ".", ".", ".", "."],
+//   [".", ".", ".", ".", ".", ".",+----+".", ".", ".", ".", "."],
+//   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
+//   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
+//   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
+// ];
 Deno.test("Part 2: Advanced given example", () => {
   const input = [
     ["R", "R", "R", "R", "I", "I", "C", "C", "F", "F"],
@@ -305,36 +308,15 @@ Deno.test("Part 2: Advanced given example", () => {
     ["M", "M", "M", "I", "S", "S", "J", "E", "E", "E"],
   ];
 
-  // [
-  //   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
-  //   [".", "R", "R", "R", "R", "I", "I", "C", "C", "F", "F", "."],
-  //   [".", "R", "R", "R", "R", "I", "I", "C", "C", "C", "F", "."],
-  //   [".", "V", "V", "R", "R", "R", "C", "C", "F", "F", "F", "."],
-  //   [".", "V", "V", "R", "C", "C", "C", "J", "F", "F", "F", "."],
-  //   [".", "V", "V", "V", "V", "C", "J", "J", "C", "F", "E", "."],
-  //   [".", "V", "V", "I", "V", "C", "C", "J", "J", "E", "E", "."],
-  //   [".", "V", "V", "I", "I", "I", "C", "J", "J", "E", "E", "."],
-  //   [".", "M", "I", "I", "I", "I", "I", "J", "J", "E", "E", "."],
-  //   [".", "M", "I", "I", "I", "S", "I", "J", "E", "E", "E", "."],
-  //   [".", "M", "M", "M", "I", "S", "S", "J", "E", "E", "E", "."],
-  //   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
-  // ];
-
-  // 24 sides to the big C plot
-  // [
-  //   [".", ".", ".",|".", ".", ".", ".",+---------+".", ".", "."],
-  //   [".", ".", ----+".", ".", ".", ".",|"C", "C",+----+".", "."],
-  //   [".", ".", ".", "O", ".", ".",+----+"C", "C", "C",|".", "."],
-  //   [".", ".", ".", ".",+---------+"C", "C",+---------+".", "."],
-  //   [".", ".", ".", ".",|"C", "C", "C",+-O--+".", ".", ".", "."],
-  //   [".", ".", ".", ".",+----+"C",:====:".", ".", ".", ".", "."],
-  //   [".", ".", ".", ".", "O",|"C", "C",|".", ".", ".", ".", "."],
-  //   [".", ".", ".", ".", ".",+----+"C",|".", ".", ".", ".", "."],
-  //   [".", ".", ".", ".", ".", ".",+----+".", ".", ".", ".", "."],
-  //   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
-  //   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
-  //   [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."],
-  // ];
-
   assertEquals(calcPricing2(input), 1206);
 });
+
+if (import.meta.main) {
+  const grid: string[][] = Deno.readTextFileSync("input.txt")
+    .trim()
+    .split("\n")
+    .map((line) => line.split(""));
+
+  console.log(calcPricing(grid));
+  console.log(calcPricing2(grid));
+}
